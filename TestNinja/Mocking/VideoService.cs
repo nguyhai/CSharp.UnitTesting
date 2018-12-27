@@ -9,9 +9,22 @@ namespace TestNinja.Mocking
 {
     public class VideoService
     {
+        // Testing using Constructor Injection. We are going to create a property using the interface
+        private IFileReader _fileReader;
+        private IVideoRepository _videoRepository;
+
+        // Deleted our default constructor and set fileReader to null, this is like our default construcotr. 
+        public VideoService(IFileReader fileReader = null, IVideoRepository videoRepository = null)
+        {
+            // This means, if fileReader is not null, you will use the parameter to set the private field.  
+            // Otherwise if null, new up a new FileReader object (like in our default constructor. 
+            _fileReader = fileReader ?? new FileReader();
+            _videoRepository = videoRepository ?? new VideoRepository();
+        }
+
         public string ReadVideoTitle()
         {
-            var str = File.ReadAllText("video.txt");
+            var str = _fileReader.Read("video.txt");    //File.ReadAllText("video.txt");
             var video = JsonConvert.DeserializeObject<Video>(str);
             if (video == null)
                 return "Error parsing the video.";
@@ -20,20 +33,14 @@ namespace TestNinja.Mocking
 
         public string GetUnprocessedVideosAsCsv()
         {
-            var videoIds = new List<int>();
-            
-            using (var context = new VideoContext())
-            {
-                var videos = 
-                    (from video in context.Videos
-                    where !video.IsProcessed
-                    select video).ToList();
-                
-                foreach (var v in videos)
-                    videoIds.Add(v.Id);
+            var videoIds = new List<int>(); // Creating an empty list
 
-                return String.Join(",", videoIds);
-            }
+            var videos = _videoRepository.GetUnprocessedVideos();
+            foreach (var v in videos) // Iterate over them, get their ID, and add it to a list
+                videoIds.Add(v.Id);
+
+            return String.Join(",", videoIds); // Return as a string
+
         }
     }
 
